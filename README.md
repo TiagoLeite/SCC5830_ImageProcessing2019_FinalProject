@@ -1,3 +1,4 @@
-# SCC5830_ImageProcessing2019_FinalProject
+## Denoising Dirty Documents
+#### Tiago de Miranda Leite, 7595289
 
 Old printed documents often have imperfections due to the passage of time or poor care. Thus, yellow or crumpled pages, faded letters and symbols, spots of liquids and fungi, among others, correspond  to noise that make it hard to manipulate and use their digitized versions properly. The proposal of this project is to apply image restoration techniques, such as noise reduction filters and also deep learning techniques, such as convolutional autoencoders, for the restoration of such documents as digitized images. Such images were produced in a synthetic way, with added noise in order to simulate the mentioned imperfections. This project aims to contribute to the cleaning of such digitized documents, allowing their use in digital readers and facilitating the later application of techniques such as optical character recognition (OCR).
