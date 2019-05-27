@@ -207,6 +207,9 @@ dmypy.json
 ### Python Patch ###
 .venv/
 
-data/*
+
+dip_project_2019.pdf
+
+*.csv
 
 # End of https://www.gitignore.io/api/python,pycharm+all
