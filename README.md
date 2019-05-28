@@ -9,7 +9,7 @@ Old printed documents often have imperfections due to the passage of time or poo
 The dataset to be utilized is available in a Kaggle's contenst (https://www.kaggle.com/c/denoising-dirty-documents). It's composed of two image datasets: one for training, which contains 144 png images with sizes 540x258 or 540x420, and another for testing, with 72 images and having the same format and sizes as those ones in training dataset. These images feature a variety of text styles, to which synthetic noise has been added to simulate the imperfections present in ancient real-world documents. 
 The training dataset also has a subset containing the clean (no noise) versions of the each training image, in order to allow  the use of supervised machine learning algorithms for cleaning those images.
 
-Examples of noisy image and their clean version:
+Examples of noisy images and their clean version:
 
 <img src="/data/train/59.png?raw=true" width="270" height="129" align='top'> <img src="/data/train_cleaned/59.png?raw=true" width="270" height="129" align='top'>
 
