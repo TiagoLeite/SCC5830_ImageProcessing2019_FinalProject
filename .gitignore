@@ -210,6 +210,6 @@ dmypy.json
 
 dip_project_2019.pdf
 
-*.csv
+sampleSubmission.csv
 
 # End of https://www.gitignore.io/api/python,pycharm+all
