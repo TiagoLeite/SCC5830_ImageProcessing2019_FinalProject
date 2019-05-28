@@ -11,9 +11,9 @@ The training dataset also has a subset containing the clean (no noise) versions 
 
 Examples of noisy images and their clean version:
 
-<img src="/data/train/59.png?raw=true" width="270" height="129" align='top'> <img src="/data/train_cleaned/59.png?raw=true" width="270" height="129" align='top'>
+<img src="/data/train/image/59.png?raw=true" width="270" height="129" align='top'> <img src="/data/train_cleaned/59.png?raw=true" width="270" height="129" align='top'>
 
-<img src="/data/train/146.png?raw=true" width="270" height="210" align='top'> <img src="/data/train_cleaned/146.png?raw=true" width="270" height="210" align='top'>
+<img src="/data/train/image/146.png?raw=true" width="270" height="210" align='top'> <img src="/data/train_cleaned/146.png?raw=true" width="270" height="210" align='top'>
 
 #### Steps
 
