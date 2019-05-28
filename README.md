@@ -17,15 +17,15 @@ Examples of noisy images and their clean version:
 
 #### Steps
 
-##### 1 Image enhancement
+#### 1 Image enhancement
 
 Image enhancement techniques, such as adaptive threshold and median filter, will initially be employed for noise removal and segmentation. The main idea is to segment the letters from the noisy background.
 
-##### 2 Convolutional Autoencoder
+#### 2 Convolutional Autoencoder
 
 Techniques based on deep learning, in particular convolutional autoencoder, will also be used through supervised learning, since the dataset contains the clean version of each training image. With noisy images being fed as input, the main ideia is to train the autoencoder to recover their noise free version, by providing as label the respective clean version of each image, in a supervised machine learning approach.
 
-##### 3 Comparing methods
+#### 3 Comparing methods
 
 Finally, for the purpose of comparison between those methods, we'll first calculate the root mean squared error between the clean images provided by each method and their truly clean version provided by the training dataset, in order to establish which technique will produce the best images. In addition, each method will be used to clean the images from the provided test set, whose results will be submitted to the Kaggle's correction system in order to figure out which method will get the best result in the test set. As a last step, an ensemble model including all the used models will be implemented, in order to check if it would improve the score on Kaggle's leaderboard.
 
