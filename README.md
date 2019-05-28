@@ -17,4 +17,14 @@ Image examples:
 
 #### Steps
 
-Image enhancement techniques, such as adaptive threshold and median filter, will initially be employed for noise removal and segmentation. Then, techniques based on deep learning, in particular convolutional autoencoder, will also be used through supervised learning, since the dataset contains the clean versions of each training image. Finally, for the purpose of comparison between those methods, the root mean squared error between the noisy images and their respective noiseless version, in order to establish which method was the most efficient. In addition, each method will be used to clean the images from the provided test set, whose results will be submitted to the Kaggle's correction system in order to figure out which method will get the best result in the test set.
+##### 1 Image enhancement
+
+Image enhancement techniques, such as adaptive threshold and median filter, will initially be employed for noise removal and segmentation. The main idea is to segment the letters from the noisy background.
+
+##### 2 Convolutional Autoencoder
+
+Techniques based on deep learning, in particular convolutional autoencoder, will also be used through supervised learning, since the dataset contains the clean versions of each training image. With noisy images being fed as input, the main ideia is to train the autoencoder to recover their noise free version, by providing as label the respective clean version of each image, in a supervised machine learning approach.
+
+#### 3 Comparing methods
+
+Finally, for the purpose of comparison between those methods, we'll calculate the root mean squared error between the noisy images and their respective cleaned version that was provided by each  method, in order to establish which one will produce the best image. In addition, each method will be used to clean the images from the provided test set, whose results will be submitted to the Kaggle's correction system in order to figure out which method will get the best result in the test set. As a last step, an ensemble model including all the used models can be figured out, in order to check if it woould improve the score on Kaggle's leaderboard.
