@@ -31,5 +31,5 @@ Finally, for the purpose of comparison between those methods, we'll first calcul
 
 #### 4 Ensembled model
 
-As a last step, an ensemble model including all the used models will be implemented, in order to check if it would improve the score on Kaggle's leaderboard.
+As a last step, an ensembled model including all the used models will be implemented, in order to check if it would improve the score on Kaggle's leaderboard.
 
