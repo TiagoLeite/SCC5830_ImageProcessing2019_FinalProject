@@ -74,17 +74,10 @@ def train_autoencoder():
 
     x_train, y_train, x_val, y_val = split_train_val(x_train, y_train)
 
-    early_stopping = EarlyStopping(monitor='val_loss',
-                                   min_delta=0,
-                                   patience=5,
-                                   verbose=1,
-                                   mode='auto')
-
     autoencoder.fit(x_train, y_train,
                     batch_size=BATCH_SIZE,
                     epochs=100,
-                    validation_data=(x_val, y_val),
-                    callbacks=[early_stopping])
+                    validation_data=(x_val, y_val))
 
     autoencoder.save('autoencoder.h5')
 
