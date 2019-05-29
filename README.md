@@ -17,9 +17,9 @@ Examples of noisy images and their clean version:
 
 #### Steps
 
-#### 1 Image enhancement
+#### 1 Image enhancement/segmentation
 
-Image enhancement techniques, such as adaptive threshold and median filter, will initially be employed for noise removal and segmentation. The main idea is to segment the letters from the noisy background.
+Image enhancement and segmentation techniques, such as adaptive threshold and median filter, will initially be employed for noise removal and segmentation. The main idea is to segment the letters from the noisy background.
 
 #### 2 Convolutional Autoencoder
 
