@@ -93,7 +93,7 @@ def median_filter(image, filter_shape):
     # return the input value for all pixels in the mask or pure white otherwise
     # return np.where(mask, image, 1.0)
 
-    return np.reshape(255*bg, newshape=image_shape).astype(np.int)
+    return np.reshape(255 * bg, newshape=image_shape).astype(np.int)
 
 
 def denoise_image(inp):
@@ -109,16 +109,20 @@ def denoise_image(inp):
 def load_image(path):
     images_1 = []
     images_2 = []
+    images_ids_1 = []
+    images_ids_2 = []
     for index, fig in enumerate(path):
         img = image.load_img(fig, color_mode='grayscale')
         x = image.img_to_array(img).astype('float32') / 255.0
         x_shape = np.shape(x)
         if x_shape == (420, 540, 1):
             images_1.append(x)
+            images_ids_1.append((fig.split('/')[-1]).split('.')[0])
         else:
             images_2.append(x)
+            images_ids_2.append((fig.split('/')[-1]).split('.')[0])
 
-    return np.asarray(images_1), np.asarray(images_2)
+    return np.asarray(images_1), np.asarray(images_2), images_ids_1, images_ids_2
 
 
 def normalize(image, normalize_min=0, normalize_max=255):
@@ -186,8 +190,10 @@ def split_train_val(x_train, y_train):
 
 
 def train_autoencoder():
-    x_train_1, x_train_2 = load_image(train_images)
-    y_train_1, y_train_2 = load_image(target_images)
+
+    x_train_1, x_train_2, _, _ = load_image(train_images)
+    y_train_1, y_train_2, _, _ = load_image(target_images)
+
     # x_test = load_image(test_images)
 
     print(np.shape(x_train_1))
@@ -214,23 +220,62 @@ def train_autoencoder():
     autoencoder_2.save('autoencoder_2.h5')
 
 
-def use_autoencoder():
-    train_autoencoder()
+def encode_images_for_submission(list_images, list_images_ids):
+    lines = list()
+    for index, image in enumerate(list_images):
+        image_shape = np.shape(image)
+        for i in range(image_shape[1]):
+            for j in range(image_shape[0]):
+                # print('>>', image[j][i][0])
+                lines.append(str(str(list_images_ids[index]) + '_' + str(j + 1) +
+                             '_' + str(i + 1) + ',' + str(image[j][i][0])))
+    return lines
 
+
+def evaluate_autoencoder():
+    # train_autoencoder()
+    autoencoder_1 = load_model(filepath='autoencoder_1.h5')
     autoencoder_2 = load_model(filepath='autoencoder_2.h5')
-
-    print(autoencoder_2.summary())
     # print(autoencoder_1.summary())
 
-    # test_image = Image.open('data/test/139.png')  # unknown image
-    test_image = Image.open('data/test/25.png')  # unknown image
+    image_test_1, image_test_2, ids1, ids2 = load_image(test_images)
 
-    img_shape = np.shape(test_image)
+    pred_images = list()
+    for test_image in image_test_1:
+        img_shape = np.shape(test_image)
+        test_image = np.array(test_image)
+        test_image = np.reshape(test_image, newshape=[1, img_shape[0], img_shape[1], 1])
+        pred = autoencoder_1.predict(test_image, verbose=0)[0]
+        pred_images.append(pred)
 
-    test_image = np.array(test_image) / 255.0
-    test_image = np.reshape(test_image, newshape=[1, img_shape[0], img_shape[1], 1])
+    print(np.shape(pred_images))
+    sub = encode_images_for_submission(pred_images, ids1)
+    for line in sub:
+        print(line)
 
-    pred = autoencoder_2.predict(test_image, verbose=1)[0]
+    pred_images = list()
+    for test_image in image_test_2:
+        img_shape = np.shape(test_image)
+        test_image = np.array(test_image)
+        test_image = np.reshape(test_image, newshape=[1, img_shape[0], img_shape[1], 1])
+        pred = autoencoder_2.predict(test_image, verbose=0)[0]
+        pred_images.append(pred)
+
+    sub = encode_images_for_submission(pred_images, ids2)
+    for line in sub:
+        print(line)
+
+
+    '''
+    encode = encode_images_for_submission(pred, 154)
+
+    print(encode[0])
+    print(encode[1])
+    print(encode[-2])
+    print(encode[-1])
+
+    input()
+
     pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1]])
     pred = normalize(pred)
 
@@ -243,20 +288,21 @@ def use_autoencoder():
     plt.subplot(121)
     plt.title('Noisy image')
     plt.imshow(test_image, cmap='gray')
-    plt.show()
+    plt.show()'''
 
 
 def main():
     # Uncomment the next line if you want to train the model (it will take some time), otherwise a previously trained model will be loaded
-    # use_autoencoder()
+    # train_autoencoder()
+    evaluate_autoencoder()
 
     test_image = Image.open('data/test/205.png')  # unknown image
     test_image = np.array(test_image) / 255.0
 
     # pred = median_filter(test_image, [5, 5])
 
-    pred = adap_denoising(test_image, gamma=.1, mode='robust',
-                          kernel_size=31)
+    '''pred = adap_denoising(test_image, gamma=.1, mode='robust',
+                          kernel_size=13)
 
     plt.figure(figsize=(10, 10))
     plt.subplot(122)
@@ -266,7 +312,7 @@ def main():
     plt.subplot(121)
     plt.title('Noisy image')
     plt.imshow(test_image, cmap='gray')
-    plt.show()
+    plt.show()'''
 
 
 if __name__ == '__main__':
