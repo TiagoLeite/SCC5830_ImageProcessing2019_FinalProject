@@ -8,6 +8,7 @@ from keras.callbacks import EarlyStopping
 from PIL import Image
 import glob
 from scipy import ndimage
+import csv
 
 BATCH_SIZE = 4
 
@@ -83,30 +84,28 @@ def median_filter(image, filter_shape):
     image = np.pad(image, (padding_x, padding_y), 'constant', constant_values=(0, 0))
 
     # Applies the median filter through the image
-    bg = np.asarray([[np.median(image[i:i + filter_shape[0], j:j + filter_shape[1]])
-                      for j in range(np.shape(image)[1] - 2 * padding_y)]
-                     for i in range(np.shape(image)[0] - 2 * padding_x)])
+    filtered = np.asarray([[np.median(image[i:i + filter_shape[0], j:j + filter_shape[1]])
+                            for j in range(np.shape(image)[1] - 2 * padding_y)]
+                           for i in range(np.shape(image)[0] - 2 * padding_x)])
 
-    # image = image[padding_x:-padding_x, padding_y:-padding_y]
-
-    # mask = image < bg - 0.1
-    # return the input value for all pixels in the mask or pure white otherwise
-    # return np.where(mask, image, 1.0)
-
-    return np.reshape(255 * bg, newshape=image_shape).astype(np.int)
+    return np.reshape(filtered, newshape=image_shape)
 
 
-def denoise_image(inp):
+def denoise_image_median_filter(input_image, filter_shape):
+
+    img_shape = np.shape(input_image)
+    input_image = np.reshape(input_image, newshape=[img_shape[0], img_shape[1]])
+    print('input shape:', np.shape(input_image))
     # estimate 'background' color by a median filter
-    bg = ndimage.median_filter(inp, size=[5, 5])
+    background = median_filter(input_image, filter_shape=filter_shape)
     # compute 'foreground' mask as anything that is significantly darker than
     # the background
-    mask = inp < bg - 0.1
+    mask = input_image < background - 0.2
     # return the input value for all pixels in the mask or pure white otherwise
-    return np.where(mask, inp, 1.0)
+    return np.where(mask, input_image, 1.0)
 
 
-def load_image(path):
+def load_image(path, use_padding=True):
     images_1 = []
     images_2 = []
     images_ids_1 = []
@@ -116,12 +115,14 @@ def load_image(path):
         x = image.img_to_array(img).astype('float32') / 255.0
         x_shape = np.shape(x)
         if x_shape == (420, 540, 1):
-            img = np.pad(img, [(2, 2), (2, 2)], 'constant', constant_values=(0, 0))
+            if use_padding:
+                img = np.pad(img, [(2, 2), (2, 2)], 'constant', constant_values=(0, 0))
             x = image.img_to_array(img).astype('float32') / 255.0
             images_1.append(x)
             images_ids_1.append((fig.split('/')[-1]).split('.')[0])
         else:
-            img = np.pad(img, [(3, 3), (2, 2)], 'constant', constant_values=(0, 0))
+            if use_padding:
+                img = np.pad(img, [(3, 3), (2, 2)], 'constant', constant_values=(0, 0))
             x = image.img_to_array(img).astype('float32') / 255.0
             images_2.append(x)
             images_ids_2.append((fig.split('/')[-1]).split('.')[0])
@@ -137,7 +138,7 @@ def normalize(image, normalize_min=0, normalize_max=255):
     return image
 
 
-def create_autoencoder_1(input_shape):
+def create_autoencoder(input_shape):
     input_img = Input(shape=input_shape)
     x = Conv2D(filters=256, kernel_size=(3, 3), strides=(2, 2), activation='relu', padding='same')(input_img)
     x = Conv2D(filters=128, kernel_size=(3, 3), strides=(2, 2), activation='relu', padding='same')(x)
@@ -150,30 +151,6 @@ def create_autoencoder_1(input_shape):
     x = UpSampling2D(size=(2, 2))(x)
     x = Conv2D(filters=256, kernel_size=(3, 3), activation='relu', padding='same')(x)
     x = UpSampling2D(size=(2, 2))(x)
-    # x = Cropping2D(cropping=(3, 2))(x)
-    # x = Cropping2D(cropping=(2, 2))(x)
-
-    decoder = Conv2D(1, (3, 3), activation='sigmoid', padding='same')(x)
-    autoencoder = Model(input=input_img, output=decoder)
-    autoencoder.compile(optimizer='rmsprop', loss='binary_crossentropy')
-    return autoencoder
-
-
-def create_autoencoder_2(input_shape):
-    input_img = Input(shape=input_shape)
-    x = Conv2D(filters=256, kernel_size=(3, 3), strides=(2, 2), activation='relu', padding='same')(input_img)
-    x = Conv2D(filters=128, kernel_size=(3, 3), strides=(2, 2), activation='relu', padding='same')(x)
-    encoder = Conv2D(filters=64, kernel_size=(3, 3), strides=(2, 2),
-                     activation='relu', padding='same', name='encoder')(x)
-
-    x = Conv2D(filters=64, kernel_size=(3, 3), activation='relu', padding='same')(encoder)
-    x = UpSampling2D(size=(2, 2))(x)
-    x = Conv2D(filters=128, kernel_size=(3, 3), activation='relu', padding='same')(x)
-    x = UpSampling2D(size=(2, 2))(x)
-    x = Conv2D(filters=256, kernel_size=(3, 3), activation='relu', padding='same')(x)
-    x = UpSampling2D(size=(2, 2))(x)
-    x = Cropping2D(cropping=(3, 2))(x)
-    # x = Cropping2D(cropping=(2, 2))(x)
 
     decoder = Conv2D(1, (3, 3), activation='sigmoid', padding='same')(x)
     autoencoder = Model(input=input_img, output=decoder)
@@ -194,47 +171,28 @@ def split_train_val(x_train, y_train):
 
 
 def train_autoencoder():
-
     x_train_1, x_train_2, _, _ = load_image(train_images)
     y_train_1, y_train_2, _, _ = load_image(target_images)
-
-    # x_test = load_image(test_images)
-
-    print(np.shape(x_train_1))
-    print(np.shape(y_train_1))
-
-    autoencoder_1 = create_autoencoder_1(input_shape=(None, None, 1))
-    # autoencoder_2 = create_autoencoder_2(input_shape=(None, None, 1))
-
+    autoencoder_1 = create_autoencoder(input_shape=(None, None, 1))
     print(autoencoder_1.summary())
 
-    x_train_1, y_train_1, x_val_1, y_val_1 = split_train_val(x_train_1, y_train_1)
-    x_train_2, y_train_2, x_val_2, y_val_2 = split_train_val(x_train_2, y_train_2)
-
     autoencoder_1.fit(x_train_2, y_train_2,
                       batch_size=BATCH_SIZE,
-                      epochs=100,
-                      validation_data=(x_val_2, y_val_2))
+                      epochs=100)
 
     autoencoder_1.fit(x_train_1, y_train_1,
                       batch_size=BATCH_SIZE,
-                      epochs=100,
-                      validation_data=(x_val_1, y_val_1))
-
+                      epochs=100)
 
     autoencoder_1.fit(x_train_2, y_train_2,
                       batch_size=BATCH_SIZE,
-                      epochs=32,
-                      validation_data=(x_val_2, y_val_2))
+                      epochs=40)
 
     autoencoder_1.fit(x_train_1, y_train_1,
                       batch_size=BATCH_SIZE,
-                      epochs=32,
-                      validation_data=(x_val_1, y_val_1))
+                      epochs=40)
 
-
-
-    autoencoder_1.save('autoencoder_1.h5')
+    autoencoder_1.save('autoencoder.h5')
 
 
 def encode_images_for_submission(list_images, list_images_ids):
@@ -243,84 +201,108 @@ def encode_images_for_submission(list_images, list_images_ids):
         image_shape = np.shape(image)
         for i in range(image_shape[1]):
             for j in range(image_shape[0]):
-                # print('>>', image[j][i][0])
                 lines.append(str(str(list_images_ids[index]) + '_' + str(j + 1) +
-                             '_' + str(i + 1) + ',' + str(image[j][i][0])))
+                                 '_' + str(i + 1) + ',' + str(image[j][i][0]) + '\n'))
     return lines
 
 
 def evaluate_autoencoder():
-    # train_autoencoder()
-    autoencoder_1 = load_model(filepath='autoencoder_1.h5')
-    autoencoder_2 = load_model(filepath='autoencoder_2.h5')
-    # print(autoencoder_1.summary())
-
+    autoencoder_1 = load_model(filepath='autoencoder.h5')
     image_test_1, image_test_2, ids1, ids2 = load_image(test_images)
-
     pred_images = list()
+
     for test_image in image_test_1:
         img_shape = np.shape(test_image)
         test_image = np.array(test_image)
         test_image = np.reshape(test_image, newshape=[1, img_shape[0], img_shape[1], 1])
         pred = autoencoder_1.predict(test_image, verbose=0)[0]
+        pred = pred[2:-2, 2:-2]
         pred_images.append(pred)
 
     print(np.shape(pred_images))
-    sub = encode_images_for_submission(pred_images, ids1)
-    for line in sub:
-        print(line)
+
+    rows = encode_images_for_submission(pred_images, ids1)
 
     pred_images = list()
     for test_image in image_test_2:
         img_shape = np.shape(test_image)
         test_image = np.array(test_image)
         test_image = np.reshape(test_image, newshape=[1, img_shape[0], img_shape[1], 1])
-        pred = autoencoder_2.predict(test_image, verbose=0)[0]
+        pred = autoencoder_1.predict(test_image, verbose=0)[0]
+        pred = pred[3:-3, 2:-2]
         pred_images.append(pred)
 
-    sub = encode_images_for_submission(pred_images, ids2)
-    for line in sub:
-        print(line)
+    rows += encode_images_for_submission(pred_images, ids2)
+
+    file = open("submission_ae.csv", "w")
+    file.write('id, value\n')
+    file.writelines(rows)
+    file.close()
 
 
-    '''
-    encode = encode_images_for_submission(pred, 154)
+def evaluate_median_filter_denoising():
+    count = 0
+    image_test_1, image_test_2, ids1, ids2 = load_image(test_images, use_padding=False)
 
-    print(encode[0])
-    print(encode[1])
-    print(encode[-2])
-    print(encode[-1])
+    pred_images = list()
+    for test_image in image_test_1:
+        print(count)
+        count += 1
+        pred = denoise_image_median_filter(test_image, filter_shape=[5, 5])
+        img_shape = np.shape(pred)
+        pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1], 1])
+        pred_images.append(pred)
 
-    input()
+    rows = encode_images_for_submission(pred_images, ids1)
 
-    pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1]])
-    pred = normalize(pred)
+    pred_images = list()
+    for test_image in image_test_2:
+        print(count)
+        count += 1
+        pred = denoise_image_median_filter(test_image, filter_shape=[5, 5])
+        img_shape = np.shape(pred)
+        pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1], 1])
+        pred_images.append(pred)
 
-    plt.figure(figsize=(10, 10))
-    plt.subplot(122)
-    plt.title('Clean image')
-    plt.imshow(pred, cmap='gray')
+    rows += encode_images_for_submission(pred_images, ids2)
 
-    test_image = np.reshape(test_image, newshape=[img_shape[0], img_shape[1]])
-    plt.subplot(121)
-    plt.title('Noisy image')
-    plt.imshow(test_image, cmap='gray')
-    plt.show()'''
+    file = open("submission_median.csv", "w")
+    file.write('id, value\n')
+    file.writelines(rows)
+    file.close()
 
 
 def main():
     # Uncomment the next line if you want to train the model (it will take some time), otherwise a previously trained model will be loaded
-    train_autoencoder()
+    # train_autoencoder()
+    print('Median filtering:')
+    evaluate_median_filter_denoising()
+
+    # print('AE filtering:')
     # evaluate_autoencoder()
 
     test_image = Image.open('data/test/205.png')  # unknown image
     test_image = np.array(test_image) / 255.0
 
-    # pred = median_filter(test_image, [5, 5])
+    pred = denoise_image_median_filter(test_image, filter_shape=[5, 5])
+    img_shape = np.shape(pred)
+    pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1], 1])
 
-    '''pred = adap_denoising(test_image, gamma=.1, mode='robust',
-                          kernel_size=13)
+    print(np.shape(pred))
 
+    enc = encode_images_for_submission([pred], [205])
+    print(np.shape(enc))
+
+    file = open("submission_test.csv", "w")
+    file.write('id, value\n')
+    file.writelines(enc)
+    file.close()
+
+    # print(enc)
+    # pred = adap_denoising(test_image, gamma=.1, mode='robust',
+    #                      kernel_size=13)
+
+    '''pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1]])
     plt.figure(figsize=(10, 10))
     plt.subplot(122)
     plt.title('Clean image')
