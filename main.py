@@ -84,7 +84,7 @@ def median_filter(image, filter_shape):
     image = np.pad(image, (padding_x, padding_y), 'constant', constant_values=(0, 0))
 
     # Applies the median filter through the image
-    filtered = np.asarray([[np.median(image[i:i + filter_shape[0], j:j + filter_shape[1]])
+    filtered = np.asarray([[np.mean(image[i:i + filter_shape[0], j:j + filter_shape[1]])
                             for j in range(np.shape(image)[1] - 2 * padding_y)]
                            for i in range(np.shape(image)[0] - 2 * padding_x)])
 
@@ -92,7 +92,6 @@ def median_filter(image, filter_shape):
 
 
 def denoise_image_median_filter(input_image, filter_shape):
-
     img_shape = np.shape(input_image)
     input_image = np.reshape(input_image, newshape=[img_shape[0], img_shape[1]])
     print('input shape:', np.shape(input_image))
@@ -173,26 +172,26 @@ def split_train_val(x_train, y_train):
 def train_autoencoder():
     x_train_1, x_train_2, _, _ = load_image(train_images)
     y_train_1, y_train_2, _, _ = load_image(target_images)
-    autoencoder_1 = create_autoencoder(input_shape=(None, None, 1))
-    print(autoencoder_1.summary())
+    autoencoder = create_autoencoder(input_shape=(None, None, 1))
+    print(autoencoder.summary())
 
-    autoencoder_1.fit(x_train_2, y_train_2,
-                      batch_size=BATCH_SIZE,
-                      epochs=100)
+    autoencoder.fit(x_train_2, y_train_2,
+                    batch_size=BATCH_SIZE,
+                    epochs=100)
 
-    autoencoder_1.fit(x_train_1, y_train_1,
-                      batch_size=BATCH_SIZE,
-                      epochs=100)
+    autoencoder.fit(x_train_1, y_train_1,
+                    batch_size=BATCH_SIZE,
+                    epochs=100)
 
-    autoencoder_1.fit(x_train_2, y_train_2,
-                      batch_size=BATCH_SIZE,
-                      epochs=40)
+    autoencoder.fit(x_train_2, y_train_2,
+                    batch_size=BATCH_SIZE,
+                    epochs=40)
 
-    autoencoder_1.fit(x_train_1, y_train_1,
-                      batch_size=BATCH_SIZE,
-                      epochs=40)
+    autoencoder.fit(x_train_1, y_train_1,
+                    batch_size=BATCH_SIZE,
+                    epochs=40)
 
-    autoencoder_1.save('autoencoder.h5')
+    autoencoder.save('autoencoder.h5')
 
 
 def encode_images_for_submission(list_images, list_images_ids):
@@ -235,12 +234,13 @@ def evaluate_autoencoder():
     rows += encode_images_for_submission(pred_images, ids2)
 
     file = open("submission_ae.csv", "w")
-    file.write('id, value\n')
+    file.write('id,value\n')
     file.writelines(rows)
     file.close()
 
 
 def evaluate_median_filter_denoising():
+
     count = 0
     image_test_1, image_test_2, ids1, ids2 = load_image(test_images, use_padding=False)
 
@@ -248,7 +248,7 @@ def evaluate_median_filter_denoising():
     for test_image in image_test_1:
         print(count)
         count += 1
-        pred = denoise_image_median_filter(test_image, filter_shape=[5, 5])
+        pred = denoise_image_median_filter(test_image, filter_shape=[7, 7])
         img_shape = np.shape(pred)
         pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1], 1])
         pred_images.append(pred)
@@ -259,15 +259,15 @@ def evaluate_median_filter_denoising():
     for test_image in image_test_2:
         print(count)
         count += 1
-        pred = denoise_image_median_filter(test_image, filter_shape=[5, 5])
+        pred = denoise_image_median_filter(test_image, filter_shape=[7, 7])
         img_shape = np.shape(pred)
         pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1], 1])
         pred_images.append(pred)
 
     rows += encode_images_for_submission(pred_images, ids2)
 
-    file = open("submission_median.csv", "w")
-    file.write('id, value\n')
+    file = open("submission_mean.csv", "w")
+    file.write('id,value\n')
     file.writelines(rows)
     file.close()
 
@@ -275,11 +275,12 @@ def evaluate_median_filter_denoising():
 def main():
     # Uncomment the next line if you want to train the model (it will take some time), otherwise a previously trained model will be loaded
     # train_autoencoder()
-    print('Median filtering:')
+
+    # print('Median filtering:')
     evaluate_median_filter_denoising()
 
-    # print('AE filtering:')
-    # evaluate_autoencoder()
+    print('AE filtering:')
+    evaluate_autoencoder()
 
     test_image = Image.open('data/test/205.png')  # unknown image
     test_image = np.array(test_image) / 255.0
@@ -294,7 +295,7 @@ def main():
     print(np.shape(enc))
 
     file = open("submission_test.csv", "w")
-    file.write('id, value\n')
+    file.write('id,value\n')
     file.writelines(enc)
     file.close()
 
