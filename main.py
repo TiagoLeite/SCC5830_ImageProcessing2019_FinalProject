@@ -116,9 +116,13 @@ def load_image(path):
         x = image.img_to_array(img).astype('float32') / 255.0
         x_shape = np.shape(x)
         if x_shape == (420, 540, 1):
+            img = np.pad(img, [(2, 2), (2, 2)], 'constant', constant_values=(0, 0))
+            x = image.img_to_array(img).astype('float32') / 255.0
             images_1.append(x)
             images_ids_1.append((fig.split('/')[-1]).split('.')[0])
         else:
+            img = np.pad(img, [(3, 3), (2, 2)], 'constant', constant_values=(0, 0))
+            x = image.img_to_array(img).astype('float32') / 255.0
             images_2.append(x)
             images_ids_2.append((fig.split('/')[-1]).split('.')[0])
 
@@ -147,7 +151,7 @@ def create_autoencoder_1(input_shape):
     x = Conv2D(filters=256, kernel_size=(3, 3), activation='relu', padding='same')(x)
     x = UpSampling2D(size=(2, 2))(x)
     # x = Cropping2D(cropping=(3, 2))(x)
-    x = Cropping2D(cropping=(2, 2))(x)
+    # x = Cropping2D(cropping=(2, 2))(x)
 
     decoder = Conv2D(1, (3, 3), activation='sigmoid', padding='same')(x)
     autoencoder = Model(input=input_img, output=decoder)
@@ -200,24 +204,37 @@ def train_autoencoder():
     print(np.shape(y_train_1))
 
     autoencoder_1 = create_autoencoder_1(input_shape=(None, None, 1))
-    autoencoder_2 = create_autoencoder_2(input_shape=(None, None, 1))
+    # autoencoder_2 = create_autoencoder_2(input_shape=(None, None, 1))
 
     print(autoencoder_1.summary())
 
     x_train_1, y_train_1, x_val_1, y_val_1 = split_train_val(x_train_1, y_train_1)
     x_train_2, y_train_2, x_val_2, y_val_2 = split_train_val(x_train_2, y_train_2)
 
+    autoencoder_1.fit(x_train_2, y_train_2,
+                      batch_size=BATCH_SIZE,
+                      epochs=100,
+                      validation_data=(x_val_2, y_val_2))
+
     autoencoder_1.fit(x_train_1, y_train_1,
                       batch_size=BATCH_SIZE,
                       epochs=100,
                       validation_data=(x_val_1, y_val_1))
-    autoencoder_1.save('autoencoder_1.h5')
 
-    autoencoder_2.fit(x_train_2, y_train_2,
+
+    autoencoder_1.fit(x_train_2, y_train_2,
                       batch_size=BATCH_SIZE,
-                      epochs=100,
+                      epochs=32,
                       validation_data=(x_val_2, y_val_2))
-    autoencoder_2.save('autoencoder_2.h5')
+
+    autoencoder_1.fit(x_train_1, y_train_1,
+                      batch_size=BATCH_SIZE,
+                      epochs=32,
+                      validation_data=(x_val_1, y_val_1))
+
+
+
+    autoencoder_1.save('autoencoder_1.h5')
 
 
 def encode_images_for_submission(list_images, list_images_ids):
@@ -293,8 +310,8 @@ def evaluate_autoencoder():
 
 def main():
     # Uncomment the next line if you want to train the model (it will take some time), otherwise a previously trained model will be loaded
-    # train_autoencoder()
-    evaluate_autoencoder()
+    train_autoencoder()
+    # evaluate_autoencoder()
 
     test_image = Image.open('data/test/205.png')  # unknown image
     test_image = np.array(test_image) / 255.0
