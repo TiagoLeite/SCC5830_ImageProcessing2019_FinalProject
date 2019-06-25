@@ -46,7 +46,7 @@ For both previous cases, a 5x5 sized filter were used. We noticed that changing 
 ### Convolutional Autoencoder
 An Autoencoder is a type of neural network structured in such a way that it aims to create an internal and more compact representation of the input data. It has two components: an encoder followed by a decoder. The encoder aims to create a new rerpesentation of the data in a smaller space whereas the decoder reconstructs the input data to its original format, from the received encoding. 
 
-A Convolutional Autoencoder uses convolutional layers in order to extract features from the input data. For this work, a convolutional autoencoer was implemented, with 3 convolutional layers for the encoder and other 3 convolutional layers for the decoder. More implementation details can be seen in the source code.
+A Convolutional Autoencoder uses convolutional layers in order to extract features from the input data. For this work, a convolutional autoencoer was implemented, with 3 convolutional layers containing 256, 128 and 64 feature maps for the encoder, and other 3 convolutional layers for the decoder, which is symmetrical to the encoder. The filter size for all layers was set to 3x3. More implementation details can be seen in the source code.
 The following image shows a noisy image and the clean version obtained by using the suggested autoencoder. One can notice that this technique shows even better results than the previus methods:
 <img src="/sample_images/ae.png?raw=true">
 
