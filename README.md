@@ -17,9 +17,9 @@ Examples of noisy images and their clean version:
 
 #### Steps
 
-#### 1 Image enhancement/segmentation
+#### 1 Image filtering/segmentation
 
-Image enhancement and segmentation techniques, such as adaptive threshold and median filter, will initially be employed for noise removal and segmentation. The main idea is to segment the letters from the noisy background.
+Image filtering/segmentation techniques, such as mean and median filter, will initially be employed for noise removal and segmentation. The main idea is to segment the letters from the noisy background.
 
 #### 2 Convolutional Autoencoder
 
@@ -32,4 +32,23 @@ Finally, for the purpose of comparison between those methods, we'll first calcul
 #### 4 Ensembled model
 
 As a last step, an ensembled model including all the used models will be implemented, in order to check if it would improve the score on Kaggle's leaderboard.
+
+
+#### Image Filtering
+The first idea was to estimate the background color of the image by filteing it using mean and median filter. Since we have the estimated background color, and considering the fact that the letters are usually darker than the background, we can compute a foreground mask as everything that is significantly darker than the background. The following image shows the mean and filter and the result after applying the suggested idea:
+<img src="/sample_images/3_images_mean.png?raw=true">
+
+Using the median filter, the results look slightly better:
+<img src="/sample_images/3_images_median.png?raw=true">
+
+#### Convolutional Autoencoder
+An Autoencoder is a type of neural network structured in such a way that it aims to create an internal and more compact representation of the input data. It has two components: an encoder followed by a decoder. The encoder aims to create a new rerpesentation of the data in a smaller space whereas the decoder reconstructs the input data to its original format, from the received encoding. 
+A Convolutional Autoencoer uses convolutional layers in order to extract features from the input data. For this work, a convolutional autoencoer was implemented, with 3 convolutional layers for the encoder and other 3 convolutional layers for the decoder. More implementation details can be seen in the source code.
+The following image shows a noisy image and the clean version obtained by using the suggested autoencoder:
+<img src="/sample_images/ae.png?raw=true">
+
+
+
+
+
 
