@@ -51,9 +51,9 @@ The following image shows a noisy image and the clean version obtained by using 
 <img src="/sample_images/ae.png?raw=true">
 
 #### Ensemble 
-In order to verify is the combining all strategies would improve the quality of the denoised image, all the three techniques were ensembled. After getting the output image from each technique individually, the mean image was computed, pixel by pixel. The following figure shows the result for an image from the test dataset, which seems to look slightly better than the isolated results of each method.
+In order to verify if combining all strategies would improve the quality of the denoised image, all the three techniques were ensembled. After getting the output image from each technique individually, the mean image was computed, pixel by pixel. The following figure shows the result for an image from the test dataset, which seems to look slightly better than the isolated results of each method.
 
-<img src="/sample_images/all_models.png?raw=true">
+<img src="/sample_images/all_models.png?raw=true" width="1200" height="200">
 
 
 #### Submission to Kaggle
