@@ -58,9 +58,9 @@ In order to verify if combining all strategies would improve the quality of the 
 ### Submission to Kaggle
 For each technique that we used (mask with mean and median filter, and autoencoder), we generated a submission file containing the results after running the methods on the test set of images provided by Kaggle. Submissions were evaluated on the root mean squared error between the cleaned pixel intensities and the actual grayscale pixel intensities. One can notice that, as expected, the best score was reached by using an ensemble of all methods.
 
-|   | Median | Mean | Autoencoder  | Ensemble |
+|   | Mean | Median | Autoencoder  | Ensemble |
 |---|---|---|---|---|
 | Score  | 0.11029 | 0.10768 | 0.07268 | 0.06586 |
 
-
+Although the Kaggle's leaderboard for this competition hasn't been updated, we can infer that the obtained score would get the 78th position, out of 161. A suggestion for improving the score is to assign different weights to each method when ensembling, instead of simply averaging all of them.
 
