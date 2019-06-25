@@ -41,13 +41,27 @@ The first idea was to estimate the background color of the image by filteing it 
 Using the median filter, the results look slightly better:
 <img src="/sample_images/3_images_median.png?raw=true">
 
+For both previous cases, a 5x5 sized filter were used. We noticed that changing the filter size didn't improve the results significantly.
+
 #### Convolutional Autoencoder
 An Autoencoder is a type of neural network structured in such a way that it aims to create an internal and more compact representation of the input data. It has two components: an encoder followed by a decoder. The encoder aims to create a new rerpesentation of the data in a smaller space whereas the decoder reconstructs the input data to its original format, from the received encoding. 
-A Convolutional Autoencoer uses convolutional layers in order to extract features from the input data. For this work, a convolutional autoencoer was implemented, with 3 convolutional layers for the encoder and other 3 convolutional layers for the decoder. More implementation details can be seen in the source code.
-The following image shows a noisy image and the clean version obtained by using the suggested autoencoder:
+
+A Convolutional Autoencoder uses convolutional layers in order to extract features from the input data. For this work, a convolutional autoencoer was implemented, with 3 convolutional layers for the encoder and other 3 convolutional layers for the decoder. More implementation details can be seen in the source code.
+The following image shows a noisy image and the clean version obtained by using the suggested autoencoder. One can notice that this technique shows even better results than the previus methods:
 <img src="/sample_images/ae.png?raw=true">
 
+#### Ensemble 
+In order to verify is the combining all strategies would improve the quality of the denoised image, all the three techniques were ensembled. After getting the output image from each technique individually, the mean image was computed, pixel by pixel. The following figure shows the result for an image from the test dataset, which seems to look slightly better than the isolated results of each method.
 
+<img src="/sample_images/all_models.png?raw=true">
+
+
+#### Submission to Kaggle
+For each technique that we used (mask with mean and median filter, and autoencoder), we generated a submission file containing the results after running on the test set of images provided by Kaggle. Submissions were evaluated on the root mean squared error between the cleaned pixel intensities and the actual grayscale pixel intensities. 
+
+|   | Median | Mean | Autoencoder  | Ensemble |
+|---|---|---|---|---|
+| Score  | 0.11029 | 0.10768 | 0.07268 | 0.06586 |
 
 
 
