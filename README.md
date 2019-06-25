@@ -41,7 +41,7 @@ The first idea was to estimate the background color of the image by filteing it 
 Using the median filter, the results look slightly better:
 <img src="/sample_images/3_images_median.png?raw=true">
 
-For both previous cases, a 5x5 sized filter were used. We noticed that changing the filter size didn't improve the results significantly.
+For both previous cases, a 11x11 sized filter were used. We noticed that changing the filter size didn't improve the results significantly.
 
 ### Convolutional Autoencoder
 An Autoencoder is a type of neural network structured in such a way that it aims to create an internal and more compact representation of the input data. It has two components: an encoder followed by a decoder. The encoder aims to create a new rerpesentation of the data in a smaller space whereas the decoder reconstructs the input data to its original format, from the received encoding. 
