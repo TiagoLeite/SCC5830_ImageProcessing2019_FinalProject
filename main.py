@@ -7,6 +7,7 @@ from keras.models import load_model
 from keras.callbacks import EarlyStopping
 from PIL import Image
 import glob
+import pandas as pd
 from scipy import ndimage
 import csv
 
@@ -17,66 +18,23 @@ target_images = glob.glob('data/train_cleaned/*.png')
 test_images = glob.glob('data/test/*.png')
 
 
-def interquartile_range(array, axis):
-    q_75, q_50, q_25 = np.percentile(array, [75, 50, 25], interpolation='midpoint')
-    iqr = q_75 - q_25
-    return iqr, q_50
+def ensemble_models(list_csv_files):
+
+    dfs = [pd.read_csv(file) for file in list_csv_files]
+    ids = dfs[0]['id']
+
+    values = [data['value'] for data in dfs]
+
+    print(np.shape(dfs[0]['value']))
+
+    mean_values = np.mean(values, axis=0)
+
+    dataframe = pd.DataFrame(data={'id': ids, 'value': mean_values})
+    dataframe.to_csv('sub_ensemble.csv', index=False)
+    print('CSV file saved!')
 
 
-def adap_denoising(image, gamma, mode, kernel_size):
-    assert mode in ['average', 'robust']
-
-    image_w = np.shape(image)[0]
-    image_h = np.shape(image)[1]
-
-    if mode == 'average':
-        centr_measure = np.mean
-        disp_measure = np.std
-        disp_n = disp_measure(image[:image_w // 6, :image_h // 6], axis=None)
-    else:
-        centr_measure = np.median
-        disp_measure = interquartile_range
-        disp_n = disp_measure(image[:image_w // 6, :image_h // 6], axis=None)[0]
-
-    disp_n = 1 if disp_n == 0 else disp_n
-
-    new_image = np.copy(image)
-
-    # TODO: pad the image
-    # Main loop for applying the filter through the image:
-    for i in range(kernel_size // 2, image_w - kernel_size // 2):
-
-        for j in range(kernel_size // 2, image_h - kernel_size // 2):
-
-            if mode == 'robust':
-
-                sliced_image = image[i - kernel_size // 2: i + kernel_size // 2 + 1,
-                               j - kernel_size // 2: j + kernel_size // 2 + 1]
-
-                disp_l, centr_l = disp_measure(sliced_image, axis=None)
-
-                disp_l = disp_n if disp_l == 0 else disp_l
-
-            else:
-
-                sliced_image = image[i - kernel_size // 2: i + kernel_size // 2 + 1,
-                               j - kernel_size // 2: j + kernel_size // 2 + 1]
-
-                disp_l = disp_measure(sliced_image, axis=None)
-
-                disp_l = disp_n if disp_l == 0 else disp_l
-
-                centr_l = centr_measure(sliced_image, axis=None)
-
-            new_image[i][j] = image[i][j] - gamma * (disp_n / disp_l) * (image[i][j] - centr_l)
-
-    mask = image < new_image - 0.003
-    # return the input value for all pixels in the mask or pure white otherwise
-    return np.where(mask, image, 1.0)
-    # return new_image
-
-
-def median_filter(image, filter_shape):
+def filter(image, filtering_function, filter_shape):
     padding_x = filter_shape[0] // 2
     padding_y = filter_shape[1] // 2
     image_shape = np.shape(image)
@@ -84,24 +42,25 @@ def median_filter(image, filter_shape):
     image = np.pad(image, (padding_x, padding_y), 'constant', constant_values=(0, 0))
 
     # Applies the median filter through the image
-    filtered = np.asarray([[np.mean(image[i:i + filter_shape[0], j:j + filter_shape[1]])
+    filtered = np.asarray([[filtering_function(image[i:i + filter_shape[0], j:j + filter_shape[1]])
                             for j in range(np.shape(image)[1] - 2 * padding_y)]
                            for i in range(np.shape(image)[0] - 2 * padding_x)])
 
     return np.reshape(filtered, newshape=image_shape)
 
 
-def denoise_image_median_filter(input_image, filter_shape):
+def denoise_image_filtering(input_image, filtering_function, filter_shape):
     img_shape = np.shape(input_image)
     input_image = np.reshape(input_image, newshape=[img_shape[0], img_shape[1]])
     print('input shape:', np.shape(input_image))
     # estimate 'background' color by a median filter
-    background = median_filter(input_image, filter_shape=filter_shape)
+    background = filter(input_image, filtering_function, filter_shape=filter_shape)
+
     # compute 'foreground' mask as anything that is significantly darker than
     # the background
-    mask = input_image < background - 0.2
+    mask = input_image < background - 0.1
     # return the input value for all pixels in the mask or pure white otherwise
-    return np.where(mask, input_image, 1.0)
+    return np.where(mask, input_image, 1.0), background
 
 
 def load_image(path, use_padding=True):
@@ -239,7 +198,7 @@ def evaluate_autoencoder():
     file.close()
 
 
-def evaluate_median_filter_denoising():
+def evaluate_filter_denoising(filtering_function, submission_filename):
 
     count = 0
     image_test_1, image_test_2, ids1, ids2 = load_image(test_images, use_padding=False)
@@ -248,7 +207,7 @@ def evaluate_median_filter_denoising():
     for test_image in image_test_1:
         print(count)
         count += 1
-        pred = denoise_image_median_filter(test_image, filter_shape=[7, 7])
+        pred = denoise_image_filtering(test_image, filtering_function, filter_shape=[5, 5])
         img_shape = np.shape(pred)
         pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1], 1])
         pred_images.append(pred)
@@ -259,57 +218,74 @@ def evaluate_median_filter_denoising():
     for test_image in image_test_2:
         print(count)
         count += 1
-        pred = denoise_image_median_filter(test_image, filter_shape=[7, 7])
+        pred = denoise_image_filtering(test_image, filtering_function, filter_shape=[7, 7])
         img_shape = np.shape(pred)
         pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1], 1])
         pred_images.append(pred)
 
     rows += encode_images_for_submission(pred_images, ids2)
 
-    file = open("submission_mean.csv", "w")
+    file = open(submission_filename, "w")
     file.write('id,value\n')
     file.writelines(rows)
     file.close()
 
 
-def main():
-    # Uncomment the next line if you want to train the model (it will take some time), otherwise a previously trained model will be loaded
-    # train_autoencoder()
 
-    # print('Median filtering:')
-    evaluate_median_filter_denoising()
+def main():
+
+    # ensemble_models(['sub_mean.csv', 'sub_median.csv', 'submission_ae.csv'])
+    # input()
+
+    '''
+    # Uncomment the next line if you want to train the model (it will take some time), otherwise a previously trained model will be loaded
+    train_autoencoder()
 
     print('AE filtering:')
     evaluate_autoencoder()
 
+    print('Median filtering:')
+    evaluate_filter_denoising(np.median, 'sub_median.csv')
+
+    print('Mean filtering:')
+    evaluate_filter_denoising(np.mean, 'sub_mean.csv')'''
+
     test_image = Image.open('data/test/205.png')  # unknown image
     test_image = np.array(test_image) / 255.0
 
-    pred = denoise_image_median_filter(test_image, filter_shape=[5, 5])
+    autoencoder = load_model(filepath='autoencoder.h5')
+    test_image = np.pad(test_image, [(2, 2), (2, 2)], 'constant', constant_values=(0, 0))
+    img_shape = np.shape(test_image)
+    test_image = np.reshape(test_image, newshape=[1, img_shape[0], img_shape[1], 1])
+    pred = autoencoder.predict(test_image, verbose=0)[0]
     img_shape = np.shape(pred)
-    pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1], 1])
+    pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1]])
+    pred = pred[2:-2, 2:-2]
+    img_shape = np.shape(pred)
+    test_image = np.reshape(test_image, newshape=[img_shape[0]+4, img_shape[1]+4])
 
-    print(np.shape(pred))
-
-    enc = encode_images_for_submission([pred], [205])
-    print(np.shape(enc))
-
-    file = open("submission_test.csv", "w")
-    file.write('id,value\n')
-    file.writelines(enc)
-    file.close()
-
-    # print(enc)
-    # pred = adap_denoising(test_image, gamma=.1, mode='robust',
-    #                      kernel_size=13)
-
-    '''pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1]])
-    plt.figure(figsize=(10, 10))
+    # plt.figure(figsize=(10, 10))
     plt.subplot(122)
     plt.title('Clean image')
     plt.imshow(pred, cmap='gray')
 
     plt.subplot(121)
+    plt.title('Background image')
+    plt.imshow(test_image, cmap='gray')
+    plt.show()
+
+
+    '''
+    pred, bg = denoise_image_filtering(test_image, np.median, filter_shape=[11, 11])
+    plt.subplot(133)
+    plt.title('Clean image')
+    plt.imshow(pred, cmap='gray')
+
+    plt.subplot(132)
+    plt.title('Background image')
+    plt.imshow(bg, cmap='gray')
+
+    plt.subplot(131)
     plt.title('Noisy image')
     plt.imshow(test_image, cmap='gray')
     plt.show()'''
