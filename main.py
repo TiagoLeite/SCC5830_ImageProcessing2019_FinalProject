@@ -250,45 +250,47 @@ def main():
     print('Mean filtering:')
     evaluate_filter_denoising(np.mean, 'sub_mean.csv')'''
 
-    test_image = Image.open('data/test/205.png')  # unknown image
+    test_image = Image.open('data/test/49.png')  # unknown image
     test_image = np.array(test_image) / 255.0
 
+    plt.subplot(155)
+    plt.title('Test Image')
+    plt.imshow(test_image, cmap='gray')
+
     autoencoder = load_model(filepath='autoencoder.h5')
-    test_image = np.pad(test_image, [(2, 2), (2, 2)], 'constant', constant_values=(0, 0))
+    test_image = np.pad(test_image, [(3, 3), (2, 2)], 'constant', constant_values=(0, 0))
     img_shape = np.shape(test_image)
     test_image = np.reshape(test_image, newshape=[1, img_shape[0], img_shape[1], 1])
     pred = autoencoder.predict(test_image, verbose=0)[0]
     img_shape = np.shape(pred)
     pred = np.reshape(pred, newshape=[img_shape[0], img_shape[1]])
-    pred = pred[2:-2, 2:-2]
+    pred = pred[3:-3, 2:-2]
     img_shape = np.shape(pred)
-    test_image = np.reshape(test_image, newshape=[img_shape[0]+4, img_shape[1]+4])
+    test_image = np.reshape(test_image, newshape=[img_shape[0]+6, img_shape[1]+4])
 
     # plt.figure(figsize=(10, 10))
-    plt.subplot(122)
-    plt.title('Clean image')
+    plt.subplot(151)
+    plt.title('AE')
     plt.imshow(pred, cmap='gray')
 
-    plt.subplot(121)
-    plt.title('Background image')
-    plt.imshow(test_image, cmap='gray')
+    pred2, _ = denoise_image_filtering(test_image, np.median, filter_shape=[11, 11])
+    pred2 = pred2[3:-3, 2:-2]
+    plt.subplot(152)
+    plt.title('Median')
+    plt.imshow(pred2, cmap='gray')
+
+    pred3, _ = denoise_image_filtering(test_image, np.mean, filter_shape=[11, 11])
+    pred3 = pred3[3:-3, 2:-2]
+    plt.subplot(153)
+    plt.title('Mean')
+    plt.imshow(pred3, cmap='gray')
+
+    ens = (pred + pred2)/2
+    plt.subplot(154)
+    plt.title('Ensemble')
+    plt.imshow(ens, cmap='gray')
+
     plt.show()
-
-
-    '''
-    pred, bg = denoise_image_filtering(test_image, np.median, filter_shape=[11, 11])
-    plt.subplot(133)
-    plt.title('Clean image')
-    plt.imshow(pred, cmap='gray')
-
-    plt.subplot(132)
-    plt.title('Background image')
-    plt.imshow(bg, cmap='gray')
-
-    plt.subplot(131)
-    plt.title('Noisy image')
-    plt.imshow(test_image, cmap='gray')
-    plt.show()'''
 
 
 if __name__ == '__main__':
