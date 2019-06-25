@@ -253,7 +253,9 @@ def main():
     test_image = Image.open('data/test/49.png')  # unknown image
     test_image = np.array(test_image) / 255.0
 
-    plt.subplot(155)
+    fig = plt.figure(figsize=(12, 12))
+
+    fig.add_subplot(2, 3, 5)
     plt.title('Test Image')
     plt.imshow(test_image, cmap='gray')
 
@@ -268,25 +270,24 @@ def main():
     img_shape = np.shape(pred)
     test_image = np.reshape(test_image, newshape=[img_shape[0]+6, img_shape[1]+4])
 
-    # plt.figure(figsize=(10, 10))
-    plt.subplot(151)
+    fig.add_subplot(2, 3, 1)
     plt.title('AE')
     plt.imshow(pred, cmap='gray')
 
     pred2, _ = denoise_image_filtering(test_image, np.median, filter_shape=[11, 11])
     pred2 = pred2[3:-3, 2:-2]
-    plt.subplot(152)
+    fig.add_subplot(2, 3, 2)
     plt.title('Median')
     plt.imshow(pred2, cmap='gray')
 
     pred3, _ = denoise_image_filtering(test_image, np.mean, filter_shape=[11, 11])
     pred3 = pred3[3:-3, 2:-2]
-    plt.subplot(153)
+    fig.add_subplot(2, 3, 3)
     plt.title('Mean')
     plt.imshow(pred3, cmap='gray')
 
     ens = (pred + pred2)/2
-    plt.subplot(154)
+    fig.add_subplot(2, 3, 4)
     plt.title('Ensemble')
     plt.imshow(ens, cmap='gray')
 
